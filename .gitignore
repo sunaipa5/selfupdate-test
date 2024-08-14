@@ -1,1 +1,3 @@
 selfupdate-test
+compress.sh
+*.tar.gz

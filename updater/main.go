@@ -5,7 +5,10 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
+	"os/exec"
 	"strings"
+	"time"
 
 	"github.com/minio/selfupdate"
 )
@@ -60,10 +63,8 @@ func (options Options) CheckUpdate() {
 		return
 	}
 
-	if err := installUpdate(source.Download_Url); err != nil {
-		fmt.Println(err)
-		return
-	}
+	GZ_extractor(source.Download_Url)
+	installUpdateNew()
 
 	releaseJson, err := json.Marshal(release)
 	if err != nil {
@@ -73,6 +74,57 @@ func (options Options) CheckUpdate() {
 
 	fmt.Println(string(releaseJson))
 
+}
+
+func installUpdateNew() {
+	newBinary := ".tmp/selfupdate-test"
+	oldBinary, err := os.Executable()
+	if err != nil {
+		fmt.Println("Already app location cannot get:", err)
+		return
+	}
+
+	// Yeni binary'ye çalıştırma izni ver
+	err = os.Chmod(newBinary, 0755)
+	if err != nil {
+		fmt.Println("Exec permission cannot get:", err)
+		return
+	}
+
+	// Yeni binary'yi çalıştır
+	cmd := exec.Command(newBinary, "updated")
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	err = cmd.Start()
+	if err != nil {
+		fmt.Println("New app cannot start:", err)
+		return
+	}
+
+	// Kısa bir süre bekle
+	time.Sleep(time.Second)
+
+	// Eski binary'yi yenisiyle değiştir
+	bakPath := oldBinary + ".bak"
+	err = os.Rename(oldBinary, bakPath)
+	if err != nil {
+		fmt.Println("Old file cannot backup:", err)
+		return
+	}
+
+	err = os.Rename(newBinary, oldBinary)
+	if err != nil {
+		// Hata durumunda eski dosyayı geri getir
+		os.Rename(bakPath, oldBinary)
+		fmt.Println("File cannot changed:", err)
+		return
+	}
+
+	// Yedek dosyayı sil
+	os.Remove(bakPath)
+
+	fmt.Println("Update Finised")
+	os.Exit(0)
 }
 
 func installUpdate(url string) error {

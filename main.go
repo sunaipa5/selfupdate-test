@@ -1,14 +1,25 @@
 package main
 
-import "selfupdate-test/updater"
+import (
+	"fmt"
+	"selfupdate-test/updater"
+	"time"
+)
 
 func main() {
+	fmt.Println("APP VERSION 0.0.3")
+
 	updaterOptions := updater.Options{
 		Author:         "sunaipa5",
-		Repo:           "soundark",
-		CurrentVersion: "0.9",
-		TagEnd:         "executable.zip",
+		Repo:           "selfupdate-test",
+		CurrentVersion: "0.0.3",
+		TagEnd:         "linux_amd64.tar.gz",
 	}
 
 	updaterOptions.CheckUpdate()
+
+	for i := 0; i < 20; i++ {
+		fmt.Println(updaterOptions.CurrentVersion)
+		time.Sleep(time.Second * 1)
+	}
 }
